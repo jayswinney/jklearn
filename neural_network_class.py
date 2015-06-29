@@ -81,14 +81,14 @@ class neural_network:
         m = len(x)
         delta_weights, delta_biases = self.back_prop(x, y)
 
-        self.weights = [w - lr * wg/m for
+        self.weights = [w - lr * (wg/m + Lambda * w) for
                         wg, w in zip(delta_weights, self.weights)]
         self.biases = [b - lr * bg/m for bg, b
                         in zip(delta_biases, self.biases)]
-
+        
 
     def fit(self, x, y, batch_size, learning_rate = 0.01, epochs = 1,
-            Lambda = 1e-4, return_cost = False): 
+            Lambda = 1e-4, return_cost = False):
         '''
         train the neural network using minibatch gradient descent
         '''
