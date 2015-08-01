@@ -25,6 +25,11 @@ class neural_network:
         self.biases = [np.random.randn(x) for x in sizes[1:]]
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
+
+        self.velocity_biases = [np.zeros(x) for x in sizes[1:]]
+        self.velocity_weights = [np.zeros((y, x)) for x, y in
+                                 zip(sizes[:-1], sizes[1:])]
+
         self.a = [np.zeros(x) for x in sizes]
         self.a_vec = []
         self.activation = activation
@@ -34,10 +39,7 @@ class neural_network:
 
 
     def predict(self,x):
-        '''
-        get the output from the neural network
-        also stores the
-        '''
+        self.a_vec = []
         self.z_vec = []
         self.a_vec = [x]
         m = x.shape[0]
@@ -72,29 +74,40 @@ class neural_network:
 
 
 
-
-    def gradient_descent(self, x, y, lr, Lambda):
+    def gradient_descent(self, x, y, lr, Lambda, u):
         '''
         vectorized gradient descent function.
         performas a single gradient descent update on the weights and biases
+        lr: learning rate
+        Lambda: regularization parameter
+        u: velocity coeficient
         '''
         m = len(x)
         delta_weights, delta_biases = self.back_prop(x, y)
+        # update velocity values
+        self.velocity_weights = [wv * u - wg/m for wg, wv in
+                                 zip(delta_weights, self.velocity_weights)]
+        self.velocity_biases = [bv * u - bg/m for bg, bv in
+                                zip(delta_biases, self.velocity_biases)]
+        # update parameters
+        self.weights = [w + lr * (wv + Lambda * w) for
+                        wv, w in zip(self.velocity_weights, self.weights)]
 
-        self.weights = [w - lr * (wg/m + Lambda * w) for
-                        wg, w in zip(delta_weights, self.weights)]
-        self.biases = [b - lr * bg/m for bg, b
-                        in zip(delta_biases, self.biases)]
-        
+        self.biases = [b + lr * bv for bv, b
+                        in zip(self.velocity_biases, self.biases)]
 
-    def fit(self, x, y, batch_size, learning_rate = 0.01, epochs = 1,
-            Lambda = 1e-4, return_cost = False):
+
+    def fit(self, x, y, batch_size, test_x = None, test_y = None,
+            learning_rate = 0.01, Lambda = 1e-4,
+            velocity_coef = 1, epochs = 1, return_cost = False):
         '''
         train the neural network using minibatch gradient descent
         '''
         if return_cost:
             cost = []
         for e in xrange(epochs):
+            if e % 4 == 0:
+                print e
             # create mini batches for minibatch gradient descent
             m = len(x)
             index = np.array(range(m))
@@ -103,10 +116,10 @@ class neural_network:
             num_batches = round(m/batch_size,0)
             batches = np.array_split(index, num_batches)
             for batch in batches:
-                self.gradient_descent(x[batch], y[batch],
-                                      learning_rate, Lambda)
+                self.gradient_descent(x[batch], y[batch], learning_rate,
+                                      Lambda, velocity_coef)
             if return_cost:
-                cost.append(log_loss(y, self.predict(x)))
+                cost.append(log_loss(test_y, self.predict(test_x)))
 
         if return_cost:
             return cost
