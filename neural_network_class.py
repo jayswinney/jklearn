@@ -2,6 +2,7 @@ from __future__ import division
 
 import numpy as np
 import numpy.matlib
+import sys
 
 sigmoid = np.vectorize(lambda x: 1.0/(1.0+np.exp(-x)))
 sig = lambda x: 1.0/(1.0+np.exp(-x))
@@ -18,7 +19,6 @@ class neural_network:
     def __init__(self, sizes, activation = sigmoid, act_d = sigmoid_d):
         '''
         one required arguement: a list with the layer sizes
-        can be used for classification or regression
         '''
         self.num_layers = len(sizes)
         self.sizes = sizes
@@ -39,6 +39,9 @@ class neural_network:
 
 
     def predict(self,x):
+        '''
+        get output of neural network and set values for activation layers
+        '''
         self.a_vec = []
         self.z_vec = []
         self.a_vec = [x]
@@ -103,11 +106,14 @@ class neural_network:
         '''
         train the neural network using minibatch gradient descent
         '''
+        assert x.shape[1] == self.weights[0].shape[1]
+
         if return_cost:
             cost = []
         for e in xrange(epochs):
-            if e % 4 == 0:
-                print e
+            sys.stderr.flush()
+            sys.stderr.write('\r %s/' % str(e+1) + str(epochs))
+
             # create mini batches for minibatch gradient descent
             m = len(x)
             index = np.array(range(m))
